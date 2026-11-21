@@ -1,4 +1,5 @@
-import { useUiStore } from '@/store';
+import { useSimStore, useUiStore } from '@/store';
+import { useCircuitWarnings } from '@/features/canvas';
 import { ToolbarButton } from './ToolbarButton';
 import { SimulationControls } from './SimulationControls';
 
@@ -7,11 +8,17 @@ export function Toolbar() {
   const paletteOpen = useUiStore((state) => state.paletteOpen);
   const inspectorOpen = useUiStore((state) => state.inspectorOpen);
   const bottomPanelOpen = useUiStore((state) => state.bottomPanelOpen);
+  const warningsPanelOpen = useUiStore((state) => state.warningsPanelOpen);
 
   const toggleTheme = useUiStore((state) => state.toggleTheme);
   const togglePalette = useUiStore((state) => state.togglePalette);
   const toggleInspector = useUiStore((state) => state.toggleInspector);
   const toggleBottomPanel = useUiStore((state) => state.toggleBottomPanel);
+  const toggleWarningsPanel = useUiStore((state) => state.toggleWarningsPanel);
+
+  const { pinWarnings } = useCircuitWarnings();
+  const compiled = useSimStore((state) => state.compiled);
+  const totalWarnings = pinWarnings.length + (compiled?.issues.length ?? 0);
 
   return (
     <header className="h-12 w-full border-b border-border bg-surface flex items-center justify-between px-4 flex-none select-none">
@@ -53,6 +60,21 @@ export function Toolbar() {
       </div>
 
       <div className="flex items-center gap-1.5">
+        <ToolbarButton
+          active={warningsPanelOpen}
+          onClick={toggleWarningsPanel}
+          aria-label="Toggle warnings panel"
+          aria-pressed={warningsPanelOpen}
+        >
+          <span className="flex items-center gap-1.5">
+            <span>Warnings</span>
+            {totalWarnings > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-warning/20 text-warning border border-warning/40 leading-tight">
+                {totalWarnings}
+              </span>
+            )}
+          </span>
+        </ToolbarButton>
         <ToolbarButton
           active={paletteOpen}
           onClick={togglePalette}

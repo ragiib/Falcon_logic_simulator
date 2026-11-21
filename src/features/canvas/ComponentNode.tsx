@@ -4,6 +4,7 @@ import type { Node, NodeProps } from '@xyflow/react';
 import { selectInputValue, selectPinValue, useCircuitStore, useSimStore } from '@/store';
 import { getComponentDefinition } from '@/engine';
 import { SignalHandle } from './SignalHandle';
+import { useCircuitWarnings } from './useCircuitWarnings';
 
 export type ComponentNodeData = {
   componentId: string;
@@ -32,6 +33,12 @@ export const ComponentNode = memo(function ComponentNode({
   const outSignal = useSimStore(selectPinValue(data.componentId, 'out'));
   const ledSignal = useSimStore(selectInputValue(data.componentId, 'in'));
 
+  // Warnings for this component
+  const { byComponent } = useCircuitWarnings();
+  const compWarnings = byComponent[data.componentId] ?? [];
+  const hasWarnings = compWarnings.length > 0;
+  const warningTooltip = hasWarnings ? compWarnings.map((w) => w.message).join('\n') : undefined;
+
   useEffect(() => {
     updateNodeInternals(data.componentId);
   }, [data.componentId, inputCount, outputCount, updateNodeInternals]);
@@ -57,9 +64,22 @@ export const ComponentNode = memo(function ComponentNode({
       style={{ width: 96, height }}
       className={`relative rounded-md border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${borderClass}`}
     >
+      {/* Warning marker in top-right corner */}
+      {hasWarnings && (
+        <span
+          title={warningTooltip}
+          className="absolute top-1 right-1.5 text-warning text-xs font-bold leading-none pointer-events-auto cursor-help select-none"
+        >
+          ⚠
+        </span>
+      )}
+
       {/* Input Handles and Labels */}
       {inputPins.map((pin, i) => {
         const top = `${((i + 1) / (inputCount + 1)) * 100}%`;
+        const isUnconnected = compWarnings.some(
+          (w) => w.kind === 'unconnectedInput' && w.pinId === pin.id,
+        );
         return (
           <div key={pin.id}>
             <SignalHandle
@@ -68,6 +88,7 @@ export const ComponentNode = memo(function ComponentNode({
               direction="input"
               position={Position.Left}
               top={top}
+              warning={isUnconnected}
             />
             <span
               className="absolute left-2 -translate-y-1/2 text-[10px] text-text-muted font-mono leading-none select-none pointer-events-none"

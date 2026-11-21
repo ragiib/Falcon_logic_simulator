@@ -9,6 +9,7 @@ export interface SignalHandleProps {
   direction: PinDirection;
   position: Position;
   top: string;
+  warning?: boolean;
 }
 
 export const SignalHandle = memo(function SignalHandle({
@@ -17,6 +18,7 @@ export const SignalHandle = memo(function SignalHandle({
   direction,
   position,
   top,
+  warning = false,
 }: SignalHandleProps) {
   const signal = useSimStore(
     direction === 'output'
@@ -24,7 +26,13 @@ export const SignalHandle = memo(function SignalHandle({
       : selectInputValue(componentId, pinId),
   );
 
-  const bgClass = signal === 1 ? '!bg-signal-high' : '!bg-signal-low';
+  const isUnconnectedInput = warning && direction === 'input';
+
+  const visualClass = isUnconnectedInput
+    ? '!bg-surface-2 shadow-[inset_0_0_0_1.5px_var(--color-warning)]'
+    : signal === 1
+      ? '!bg-signal-high'
+      : '!bg-signal-low';
 
   return (
     <Handle
@@ -33,7 +41,7 @@ export const SignalHandle = memo(function SignalHandle({
       id={pinId}
       isConnectable={true}
       style={{ top }}
-      className={`!w-5 !h-5 !rounded-full !border-[5px] !border-solid !border-transparent !bg-clip-padding ${bgClass} hover:!bg-accent transition-colors cursor-crosshair`}
+      className={`!w-5 !h-5 !rounded-full !border-[5px] !border-solid !border-transparent !bg-clip-padding ${visualClass} hover:!bg-accent hover:shadow-none transition-colors cursor-crosshair`}
     />
   );
 });

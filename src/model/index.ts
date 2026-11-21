@@ -2,3 +2,6 @@ export * from './types';
 export * from './connections';
 export * from './fragment';
 export * from './edit';
+export * from './analysis';
+export * from './migrations';
+export * from './serialize';

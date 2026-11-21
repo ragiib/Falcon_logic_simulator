@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitStore } from '@/store/circuitStore';
 import { useUiStore } from '@/store/uiStore';
-import type { CircuitFragment, Wire } from '@/model';
+import type { Circuit, CircuitFragment, Wire } from '@/model';
 
 describe('circuitStore', () => {
   beforeEach(() => {
@@ -356,6 +356,60 @@ describe('circuitStore', () => {
       const newIds = useCircuitStore.getState().duplicateComponents([]);
       expect(newIds).toEqual([]);
       expect(useCircuitStore.getState().circuit.components).toHaveLength(1);
+    });
+  });
+
+  describe('replaceCircuit', () => {
+    it('replaces circuit and clears selections in uiStore', () => {
+      const sw = useCircuitStore.getState().addComponent('inputSwitch', { x: 0, y: 0 })!;
+      useUiStore.setState({
+        selectedIds: [sw],
+        selectedWireIds: ['some-wire-id'],
+      });
+
+      const newCircuit: Circuit = {
+        version: 1,
+        name: 'Loaded Circuit',
+        components: [
+          {
+            id: 'led-new',
+            type: 'outputLed',
+            position: { x: 50, y: 50 },
+            params: {},
+          },
+        ],
+        wires: [],
+      };
+
+      useCircuitStore.getState().replaceCircuit(newCircuit);
+
+      const state = useCircuitStore.getState().circuit;
+      expect(state.name).toBe('Loaded Circuit');
+      expect(state.components).toHaveLength(1);
+      expect(state.components[0]?.id).toBe('led-new');
+
+      // Selections must be cleared
+      expect(useUiStore.getState().selectedIds).toEqual([]);
+      expect(useUiStore.getState().selectedWireIds).toEqual([]);
+    });
+  });
+
+  describe('setCircuitName', () => {
+    it('trims whitespace and clamps name to MAX_NAME_LENGTH', () => {
+      useCircuitStore.getState().setCircuitName('   My Logic Circuit   ');
+      expect(useCircuitStore.getState().circuit.name).toBe('My Logic Circuit');
+
+      const longName = 'A'.repeat(120);
+      useCircuitStore.getState().setCircuitName(longName);
+      expect(useCircuitStore.getState().circuit.name).toBe('A'.repeat(80));
+    });
+
+    it('falls back to Untitled circuit when given an empty or whitespace string', () => {
+      useCircuitStore.getState().setCircuitName('   ');
+      expect(useCircuitStore.getState().circuit.name).toBe('Untitled circuit');
+
+      useCircuitStore.getState().setCircuitName('');
+      expect(useCircuitStore.getState().circuit.name).toBe('Untitled circuit');
     });
   });
 });

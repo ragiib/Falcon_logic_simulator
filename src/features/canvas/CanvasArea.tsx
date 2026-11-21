@@ -14,6 +14,8 @@ import { useCircuitStore, useUiStore } from '@/store';
 import { validateConnection } from '@/model';
 import { ComponentNode } from './ComponentNode';
 import { SignalEdge } from './SignalEdge';
+import { SimStatusBanner } from './SimStatusBanner';
+import { WarningsPanel } from './WarningsPanel';
 import { useCanvasShortcuts } from './useCanvasShortcuts';
 import { useSimulationSync } from './useSimulationSync';
 
@@ -227,6 +229,9 @@ export function CanvasArea() {
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
+      <SimStatusBanner />
+      <WarningsPanel />
+
       <ReactFlow
         nodes={nodes}
         edges={edges}

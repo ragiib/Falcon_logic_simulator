@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Circuit, CircuitComponent, CircuitFragment, PinRef } from '@/model';
 import {
   CURRENT_SCHEMA_VERSION,
+  MAX_NAME_LENGTH,
   extractFragment,
   instantiateFragment,
   setComponentLabel as setModelLabel,
@@ -26,6 +27,8 @@ export interface CircuitState {
   setComponentParam: (componentId: string, paramId: string, value: ParamValue) => void;
   setComponentLabel: (componentId: string, label: string) => void;
   toggleInputSwitch: (componentId: string) => void;
+  replaceCircuit: (circuit: Circuit) => void;
+  setCircuitName: (name: string) => void;
   insertFragment: (fragment: CircuitFragment, offset: { x: number; y: number }) => string[];
   duplicateComponents: (ids: readonly string[]) => string[];
   resetCircuit: () => void;
@@ -163,6 +166,22 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
     if (!comp || comp.type !== 'inputSwitch') return;
     const currentVal = comp.params['value'] === true;
     get().setComponentParam(componentId, 'value', !currentVal);
+  },
+
+  replaceCircuit: (circuit) => {
+    set({ circuit });
+    useUiStore.getState().setSelectedIds([]);
+    useUiStore.getState().setSelectedWireIds([]);
+  },
+
+  setCircuitName: (name) => {
+    const trimmed = name.trim().slice(0, MAX_NAME_LENGTH);
+    set((state) => ({
+      circuit: {
+        ...state.circuit,
+        name: trimmed.length > 0 ? trimmed : 'Untitled circuit',
+      },
+    }));
   },
 
   insertFragment: (fragment, offset) => {
