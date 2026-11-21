@@ -45,6 +45,7 @@ export function CanvasArea() {
   const removeComponents = useCircuitStore((state) => state.removeComponents);
   const addWire = useCircuitStore((state) => state.addWire);
   const removeWires = useCircuitStore((state) => state.removeWires);
+  const insertTemplate = useCircuitStore((state) => state.insertTemplate);
 
   const { screenToFlowPosition } = useReactFlow();
 
@@ -202,22 +203,38 @@ export function CanvasArea() {
 
   const onDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const type = event.dataTransfer.getData('application/x-logic-component');
-    if (!type) return;
+    const componentType = event.dataTransfer.getData('application/x-logic-component');
+    if (componentType) {
+      const flowPos = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
 
-    const flowPos = screenToFlowPosition({
-      x: event.clientX,
-      y: event.clientY,
-    });
+      const rawX = flowPos.x - 48;
+      const rawY = flowPos.y - 28;
+      const snappedX = Math.round(rawX / 16) * 16;
+      const snappedY = Math.round(rawY / 16) * 16;
 
-    const rawX = flowPos.x - 48;
-    const rawY = flowPos.y - 28;
-    const snappedX = Math.round(rawX / 16) * 16;
-    const snappedY = Math.round(rawY / 16) * 16;
+      const id = addComponent(componentType, { x: snappedX, y: snappedY });
+      if (id) {
+        setSelectedIds([id]);
+      }
+      return;
+    }
 
-    const id = addComponent(type, { x: snappedX, y: snappedY });
-    if (id) {
-      setSelectedIds([id]);
+    const templateId = event.dataTransfer.getData('application/x-logic-template');
+    if (templateId) {
+      const flowPos = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      const snappedX = Math.round(flowPos.x / 16) * 16;
+      const snappedY = Math.round(flowPos.y / 16) * 16;
+
+      const newIds = insertTemplate(templateId, { x: snappedX, y: snappedY });
+      setSelectedIds(newIds);
+      setSelectedWireIds([]);
     }
   };
 

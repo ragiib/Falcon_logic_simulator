@@ -1,6 +1,8 @@
 import { Panel } from '@/components/Panel';
 import { listComponentDefinitions } from '@/engine';
+import { templates } from '@/model';
 import { PaletteItem } from './PaletteItem';
+import { TemplateItem } from './TemplateItem';
 
 export function Palette() {
   const ioComponents = listComponentDefinitions('io');
@@ -23,6 +25,18 @@ export function Palette() {
           <div className="flex flex-col gap-1">
             {gateComponents.map((def) => (
               <PaletteItem key={def.type} definition={def} />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
+          <h3 className="text-xs font-semibold text-text-muted px-1">Templates</h3>
+          <p className="text-[11px] text-text-muted px-1 leading-snug">
+            Built from gates. Drop one, then explore or edit it.
+          </p>
+          <div className="flex flex-col gap-1">
+            {templates.map((tpl) => (
+              <TemplateItem key={tpl.id} template={tpl} />
             ))}
           </div>
         </div>

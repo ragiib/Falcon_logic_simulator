@@ -47,3 +47,6 @@ An educational, browser-based digital logic circuit simulator operating strictly
 - Linter: `oxlint` is used for linting.
 - Tailwind v4: configured via `@tailwindcss/vite` with design tokens in `@theme` inside `src/index.css`.
 - UI Colors: All component colors must strictly come from theme tokens, never hardcoded values.
+- Templates live in `src/model/templates.ts` as static `CircuitFragment`s.
+- They are inserted through `insertTemplate` as ordinary editable gate-level circuits.
+- Behavioral blocks (mux, decoder, etc.) are engine registry entries, templates are not.

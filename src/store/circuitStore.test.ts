@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitStore } from '@/store/circuitStore';
 import { useUiStore } from '@/store/uiStore';
-import type { Circuit, CircuitFragment, Wire } from '@/model';
+import { getTemplate, type Circuit, type CircuitFragment, type Wire } from '@/model';
 
 describe('circuitStore', () => {
   beforeEach(() => {
@@ -410,6 +410,68 @@ describe('circuitStore', () => {
 
       useCircuitStore.getState().setCircuitName('');
       expect(useCircuitStore.getState().circuit.name).toBe('Untitled circuit');
+    });
+  });
+
+  describe('insertTemplate', () => {
+    it('inserts a half adder template with fresh IDs and shifts to target position', () => {
+      const templateBefore = JSON.stringify(getTemplate('halfAdder'));
+      const target = { x: 160, y: 96 };
+
+      const ids = useCircuitStore.getState().insertTemplate('halfAdder', target);
+      expect(ids).toHaveLength(6);
+
+      const circuit = useCircuitStore.getState().circuit;
+      expect(circuit.components).toHaveLength(6);
+      expect(circuit.wires).toHaveLength(6);
+
+      // Minimum component x and y equals target
+      const minX = Math.min(...circuit.components.map((c) => c.position.x));
+      const minY = Math.min(...circuit.components.map((c) => c.position.y));
+      expect(minX).toBe(160);
+      expect(minY).toBe(96);
+
+      // IDs are new (not original local template ids)
+      const templateLocalIds = ['sw_a', 'sw_b', 'xor', 'and', 'led_sum', 'led_carry'];
+      for (const id of ids) {
+        expect(templateLocalIds).not.toContain(id);
+      }
+
+      // Wires reference the new component IDs
+      const newIdSet = new Set(ids);
+      for (const wire of circuit.wires) {
+        expect(newIdSet.has(wire.from.componentId)).toBe(true);
+        expect(newIdSet.has(wire.to.componentId)).toBe(true);
+      }
+
+      // Template must not be mutated
+      const templateAfter = JSON.stringify(getTemplate('halfAdder'));
+      expect(templateAfter).toBe(templateBefore);
+    });
+
+    it('yields 12 components with all-unique IDs when inserting twice', () => {
+      const ids1 = useCircuitStore.getState().insertTemplate('halfAdder', { x: 0, y: 0 });
+      const ids2 = useCircuitStore.getState().insertTemplate('halfAdder', { x: 160, y: 160 });
+
+      expect(ids1).toHaveLength(6);
+      expect(ids2).toHaveLength(6);
+
+      const circuit = useCircuitStore.getState().circuit;
+      expect(circuit.components).toHaveLength(12);
+      expect(circuit.wires).toHaveLength(12);
+
+      const allCompIds = circuit.components.map((c) => c.id);
+      expect(new Set(allCompIds).size).toBe(12);
+
+      const allWireIds = circuit.wires.map((w) => w.id);
+      expect(new Set(allWireIds).size).toBe(12);
+    });
+
+    it('returns empty array and leaves circuit unchanged for unknown template id', () => {
+      const ids = useCircuitStore.getState().insertTemplate('nope', { x: 100, y: 100 });
+      expect(ids).toEqual([]);
+      expect(useCircuitStore.getState().circuit.components).toHaveLength(0);
+      expect(useCircuitStore.getState().circuit.wires).toHaveLength(0);
     });
   });
 });

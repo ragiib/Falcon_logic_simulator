@@ -6,3 +6,4 @@ export * from './analysis';
 export * from './migrations';
 export * from './serialize';
 export * from './truthTableKey';
+export * from './templates';

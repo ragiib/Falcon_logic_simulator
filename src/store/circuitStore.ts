@@ -4,9 +4,11 @@ import {
   CURRENT_SCHEMA_VERSION,
   MAX_NAME_LENGTH,
   extractFragment,
+  getTemplate,
   instantiateFragment,
   setComponentLabel as setModelLabel,
   setComponentParam as setModelParam,
+  templateOffsetFor,
   validateConnection,
 } from '@/model';
 import type { ParamValue } from '@/engine';
@@ -31,6 +33,7 @@ export interface CircuitState {
   replaceCircuit: (circuit: Circuit) => void;
   setCircuitName: (name: string) => void;
   insertFragment: (fragment: CircuitFragment, offset: { x: number; y: number }) => string[];
+  insertTemplate: (templateId: string, target: { x: number; y: number }) => string[];
   duplicateComponents: (ids: readonly string[]) => string[];
   resetCircuit: () => void;
 }
@@ -196,6 +199,15 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
       },
     }));
     return instantiated.components.map((c) => c.id);
+  },
+
+  insertTemplate: (templateId, target) => {
+    const template = getTemplate(templateId);
+    if (!template) {
+      return [];
+    }
+    const offset = templateOffsetFor(template.fragment, target);
+    return get().insertFragment(template.fragment, offset);
   },
 
   duplicateComponents: (ids) => {
