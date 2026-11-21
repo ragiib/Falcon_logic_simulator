@@ -5,3 +5,4 @@ export * from './edit';
 export * from './analysis';
 export * from './migrations';
 export * from './serialize';
+export * from './truthTableKey';

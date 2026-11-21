@@ -1,5 +1,6 @@
 import { useUiStore } from '@/store';
 import type { BottomPanelTab } from '@/store';
+import { TruthTablePanel } from '@/features/truthTable';
 
 export function BottomPanel() {
   const bottomPanelTab = useUiStore((state) => state.bottomPanelTab);
@@ -31,11 +32,13 @@ export function BottomPanel() {
           );
         })}
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto p-4 flex items-center justify-center">
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
         {bottomPanelTab === 'truthTable' ? (
-          <p className="text-xs text-text-muted select-none">Truth table will appear here</p>
+          <TruthTablePanel />
         ) : (
-          <p className="text-xs text-text-muted select-none">Timing diagram will appear here</p>
+          <div className="flex-1 flex items-center justify-center p-4">
+            <p className="text-xs text-text-muted select-none">Timing diagram will appear here</p>
+          </div>
         )}
       </div>
     </div>

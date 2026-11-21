@@ -4,3 +4,5 @@ export * from './registry';
 export * from './components';
 export * from './simTypes';
 export * from './simulator';
+export * from './truthTableTypes';
+export * from './truthTable';

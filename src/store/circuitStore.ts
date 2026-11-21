@@ -13,6 +13,7 @@ import type { ParamValue } from '@/engine';
 import { getDefaultParams, getComponentDefinition, hasComponent } from '@/engine';
 import { createId } from '@/lib';
 import { useUiStore } from './uiStore';
+import { useTruthTableStore } from './truthTableStore';
 
 export interface CircuitState {
   circuit: Circuit;
@@ -172,6 +173,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
     set({ circuit });
     useUiStore.getState().setSelectedIds([]);
     useUiStore.getState().setSelectedWireIds([]);
+    useTruthTableStore.getState().clear();
   },
 
   setCircuitName: (name) => {
