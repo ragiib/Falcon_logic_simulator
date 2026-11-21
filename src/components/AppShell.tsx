@@ -1,11 +1,16 @@
-import { useUiStore } from '@/store';
+import { Toasts } from './Toasts';
 import { Toolbar } from './Toolbar';
 import { BottomPanel } from './BottomPanel';
 import { Palette } from '@/features/palette';
 import { CanvasArea } from '@/features/canvas';
 import { Inspector } from '@/features/inspector';
+import { LibraryDialog, useAutosave, useSaveShortcut } from '@/features/library';
+import { useUiStore } from '@/store';
 
 export function AppShell() {
+  useSaveShortcut();
+  useAutosave();
+
   const paletteOpen = useUiStore((state) => state.paletteOpen);
   const inspectorOpen = useUiStore((state) => state.inspectorOpen);
   const bottomPanelOpen = useUiStore((state) => state.bottomPanelOpen);
@@ -44,6 +49,9 @@ export function AppShell() {
           </aside>
         )}
       </div>
+
+      <LibraryDialog />
+      <Toasts />
     </div>
   );
 }

@@ -10,6 +10,7 @@ export interface UiState {
   inspectorOpen: boolean;
   bottomPanelOpen: boolean;
   warningsPanelOpen: boolean;
+  libraryOpen: boolean;
   bottomPanelTab: BottomPanelTab;
   selectedIds: string[];
   selectedWireIds: string[];
@@ -20,6 +21,8 @@ export interface UiState {
   toggleBottomPanel: () => void;
   toggleWarningsPanel: () => void;
   closeWarningsPanel: () => void;
+  openLibrary: () => void;
+  closeLibrary: () => void;
   setBottomPanelTab: (tab: BottomPanelTab) => void;
   setSelectedIds: (selectedIds: string[]) => void;
   setSelectedWireIds: (selectedWireIds: string[]) => void;
@@ -33,6 +36,7 @@ export const useUiStore = create<UiState>((set) => ({
   inspectorOpen: true,
   bottomPanelOpen: true,
   warningsPanelOpen: false,
+  libraryOpen: false,
   bottomPanelTab: 'truthTable',
   selectedIds: [],
   selectedWireIds: [],
@@ -43,6 +47,8 @@ export const useUiStore = create<UiState>((set) => ({
   toggleBottomPanel: () => set((state) => ({ bottomPanelOpen: !state.bottomPanelOpen })),
   toggleWarningsPanel: () => set((state) => ({ warningsPanelOpen: !state.warningsPanelOpen })),
   closeWarningsPanel: () => set({ warningsPanelOpen: false }),
+  openLibrary: () => set({ libraryOpen: true }),
+  closeLibrary: () => set({ libraryOpen: false }),
   setBottomPanelTab: (tab) => set({ bottomPanelTab: tab }),
   setSelectedIds: (selectedIds) => set({ selectedIds }),
   setSelectedWireIds: (selectedWireIds) => set({ selectedWireIds }),
