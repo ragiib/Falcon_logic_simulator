@@ -1,19 +1,21 @@
 import { useEffect } from 'react';
 import type { Circuit } from '@/model';
-import { useCircuitStore, useSimStore } from '@/store';
+import { useCircuitStore } from '@/store/circuitStore';
+import { circuitSimKey, useSimStore } from '@/store/simStore';
+
+export { circuitSimKey };
 
 /**
- * Computes a cheap signature of circuit components and wires to determine
- * whether a simulation resync is necessary. Position changes do not alter this key.
+ * Checks whether the circuit needs simulation synchronization, and syncs if different.
+ * Returns true if a sync was performed, false if already up-to-date.
  */
-export function circuitSimKey(circuit: Circuit): string {
-  const compPart = circuit.components
-    .map((c) => `${c.id}|${c.type}|${JSON.stringify(c.params)}`)
-    .join(';');
-  const wirePart = circuit.wires
-    .map((w) => `${w.id}|${w.from.componentId}:${w.from.pinId}|${w.to.componentId}:${w.to.pinId}`)
-    .join(';');
-  return `${compPart}#${wirePart}`;
+export function syncIfNeeded(circuit: Circuit): boolean {
+  const nextKey = circuitSimKey(circuit);
+  if (nextKey === useSimStore.getState().lastSyncedKey) {
+    return false;
+  }
+  useSimStore.getState().syncWithCircuit(circuit);
+  return true;
 }
 
 /**
@@ -22,16 +24,12 @@ export function circuitSimKey(circuit: Circuit): string {
  */
 export function useSimulationSync() {
   useEffect(() => {
-    let prevKey = circuitSimKey(useCircuitStore.getState().circuit);
-    useSimStore.getState().syncWithCircuit(useCircuitStore.getState().circuit);
-
     const unsubscribe = useCircuitStore.subscribe((state) => {
-      const nextKey = circuitSimKey(state.circuit);
-      if (nextKey !== prevKey) {
-        prevKey = nextKey;
-        useSimStore.getState().syncWithCircuit(state.circuit);
-      }
+      syncIfNeeded(state.circuit);
     });
+
+    // Sync once on mount AFTER subscribing (so changes during mount are not missed)
+    syncIfNeeded(useCircuitStore.getState().circuit);
 
     return unsubscribe;
   }, []);

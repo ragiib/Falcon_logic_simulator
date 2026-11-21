@@ -20,6 +20,7 @@ export interface SimStoreState {
   status: SettleStatus | 'idle';
   settleTicks: number;
   period: number | null;
+  lastSyncedKey: string | null;
 
   syncWithCircuit: (circuit: Circuit) => void;
   stepOnce: () => void;
@@ -27,6 +28,20 @@ export interface SimStoreState {
   setRunning: (running: boolean) => void;
   setSpeedMs: (ms: number) => void;
   resetSimulation: (circuit: Circuit) => void;
+}
+
+/**
+ * Computes a cheap signature of circuit components and wires to determine
+ * whether a simulation resync is necessary. Position changes do not alter this key.
+ */
+export function circuitSimKey(circuit: Circuit): string {
+  const compPart = circuit.components
+    .map((c) => `${c.id}|${c.type}|${JSON.stringify(c.params)}`)
+    .join(';');
+  const wirePart = circuit.wires
+    .map((w) => `${w.id}|${w.from.componentId}:${w.from.pinId}|${w.to.componentId}:${w.to.pinId}`)
+    .join(';');
+  return `${compPart}#${wirePart}`;
 }
 
 export const useSimStore = create<SimStoreState>((set, get) => ({
@@ -38,11 +53,13 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
   status: 'idle',
   settleTicks: 0,
   period: null,
+  lastSyncedKey: null,
 
   syncWithCircuit: (circuit: Circuit) => {
     const prevCompiled = get().compiled;
     const prevSimState = get().simState;
     const newCompiled = compileCircuit(circuit);
+    const key = circuitSimKey(circuit);
 
     const baseState =
       prevCompiled && prevSimState
@@ -57,6 +74,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         status: result.status,
         settleTicks: result.ticks,
         period: result.period ?? null,
+        lastSyncedKey: key,
       });
     } else {
       set({
@@ -65,6 +83,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         status: 'idle',
         settleTicks: 0,
         period: null,
+        lastSyncedKey: key,
       });
     }
   },
@@ -104,6 +123,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
   resetSimulation: (circuit: Circuit) => {
     const newCompiled = compileCircuit(circuit);
     const baseState = createInitialState(newCompiled);
+    const key = circuitSimKey(circuit);
 
     if (get().mode === 'instant') {
       const result = settle(newCompiled, baseState);
@@ -114,6 +134,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         status: result.status,
         settleTicks: result.ticks,
         period: result.period ?? null,
+        lastSyncedKey: key,
       });
     } else {
       set({
@@ -123,6 +144,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         status: 'idle',
         settleTicks: 0,
         period: null,
+        lastSyncedKey: key,
       });
     }
   },

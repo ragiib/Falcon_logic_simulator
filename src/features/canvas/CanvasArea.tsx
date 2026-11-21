@@ -17,7 +17,6 @@ import { SignalEdge } from './SignalEdge';
 import { SimStatusBanner } from './SimStatusBanner';
 import { WarningsPanel } from './WarningsPanel';
 import { useCanvasShortcuts } from './useCanvasShortcuts';
-import { useSimulationSync } from './useSimulationSync';
 
 const nodeTypes: NodeTypes = {
   component: ComponentNode,
@@ -33,7 +32,6 @@ const defaultEdgeOptions: DefaultEdgeOptions = {
 
 export function CanvasArea() {
   useCanvasShortcuts();
-  useSimulationSync();
 
   const theme = useUiStore((state) => state.theme);
   const selectedIds = useUiStore((state) => state.selectedIds);

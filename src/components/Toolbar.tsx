@@ -22,6 +22,7 @@ export function Toolbar() {
   const circuit = useCircuitStore((state) => state.circuit);
   const setCircuitName = useCircuitStore((state) => state.setCircuitName);
   const savedSnapshot = usePersistenceStore((state) => state.savedSnapshot);
+  const currentLibraryId = usePersistenceStore((state) => state.currentLibraryId);
 
   const { newCircuit, save, openLibrary, importFile, exportCircuit } = usePersistenceActions();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -65,7 +66,7 @@ export function Toolbar() {
           Logic Simulator
         </span>
 
-        <div className="flex items-center gap-1.5 ml-1">
+        <div className="flex items-center gap-2 ml-1">
           <input
             type="text"
             aria-label="Circuit name"
@@ -79,17 +80,28 @@ export function Toolbar() {
                 (e.target as HTMLInputElement).blur();
               }
             }}
-            className="bg-surface-2 border border-border focus:border-accent rounded px-2 py-0.5 text-xs text-text focus:outline-none w-32 sm:w-44 truncate"
+            className="bg-surface-2 border border-border focus:border-accent rounded px-2 py-0.5 text-xs text-text focus:outline-none min-w-[8rem] w-32 sm:w-44 truncate"
           />
-          {isDirty && (
+          {isDirty ? (
             <span
-              className="text-accent text-sm font-bold leading-none select-none cursor-default"
-              title="Unsaved changes"
-              aria-label="Unsaved changes"
+              role="status"
+              title="You have changes that are not saved. Press Ctrl+S to save."
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-warning text-warning text-xs font-medium shrink-0 whitespace-nowrap select-none cursor-default"
             >
-              •
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-warning inline-block"
+                aria-hidden="true"
+              />
+              Unsaved changes
             </span>
-          )}
+          ) : currentLibraryId !== null ? (
+            <span
+              role="status"
+              className="text-xs text-text-muted shrink-0 whitespace-nowrap select-none"
+            >
+              Saved
+            </span>
+          ) : null}
         </div>
       </div>
 
