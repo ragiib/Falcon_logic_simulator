@@ -17,6 +17,8 @@ export interface SimStoreState {
   mode: 'instant' | 'step';
   running: boolean;
   speedMs: number;
+  clockRunning: boolean;
+  clockHalfPeriodMs: number;
   status: SettleStatus | 'idle';
   settleTicks: number;
   period: number | null;
@@ -27,6 +29,8 @@ export interface SimStoreState {
   setMode: (mode: 'instant' | 'step', circuit: Circuit) => void;
   setRunning: (running: boolean) => void;
   setSpeedMs: (ms: number) => void;
+  setClockRunning: (running: boolean) => void;
+  setClockHalfPeriodMs: (ms: number) => void;
   resetSimulation: (circuit: Circuit) => void;
 }
 
@@ -50,6 +54,8 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
   mode: 'instant',
   running: false,
   speedMs: 500,
+  clockRunning: false,
+  clockHalfPeriodMs: 500,
   status: 'idle',
   settleTicks: 0,
   period: null,
@@ -120,6 +126,15 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
     set({ speedMs: clamped });
   },
 
+  setClockRunning: (running: boolean) => {
+    set({ clockRunning: running });
+  },
+
+  setClockHalfPeriodMs: (ms: number) => {
+    const clamped = Math.min(2000, Math.max(100, Math.round(ms)));
+    set({ clockHalfPeriodMs: clamped });
+  },
+
   resetSimulation: (circuit: Circuit) => {
     const newCompiled = compileCircuit(circuit);
     const baseState = createInitialState(newCompiled);
@@ -131,6 +146,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         compiled: newCompiled,
         simState: result.state,
         running: false,
+        clockRunning: false,
         status: result.status,
         settleTicks: result.ticks,
         period: result.period ?? null,
@@ -141,6 +157,7 @@ export const useSimStore = create<SimStoreState>((set, get) => ({
         compiled: newCompiled,
         simState: baseState,
         running: false,
+        clockRunning: false,
         status: 'idle',
         settleTicks: 0,
         period: null,

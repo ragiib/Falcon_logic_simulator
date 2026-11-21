@@ -7,7 +7,7 @@ import {
   useCircuitStore,
   useSimStore,
 } from '@/store';
-import { circuitSimKey } from '@/features/canvas/useSimulationSync';
+import { circuitSimKey, syncIfNeeded } from '@/features/canvas/useSimulationSync';
 
 describe('simStore', () => {
   beforeEach(() => {
@@ -240,6 +240,19 @@ describe('simStore', () => {
     });
   });
 
+  describe('setClockHalfPeriodMs', () => {
+    it('clamps below 100, above 2000, and rounds to integers', () => {
+      useSimStore.getState().setClockHalfPeriodMs(50);
+      expect(useSimStore.getState().clockHalfPeriodMs).toBe(100);
+
+      useSimStore.getState().setClockHalfPeriodMs(3000);
+      expect(useSimStore.getState().clockHalfPeriodMs).toBe(2000);
+
+      useSimStore.getState().setClockHalfPeriodMs(450.6);
+      expect(useSimStore.getState().clockHalfPeriodMs).toBe(451);
+    });
+  });
+
   describe('resetSimulation', () => {
     it('resets simulation state without carry-over and stops running', () => {
       const circuit: Circuit = {
@@ -271,6 +284,23 @@ describe('simStore', () => {
       expect(s.running).toBe(false);
       expect(s.simState?.tick).toBe(0);
       expect(selectPinValue('sw', 'out')(s)).toBe(0);
+    });
+
+    it('resets clockRunning to false', () => {
+      const circuit: Circuit = {
+        version: 1,
+        name: 'Reset Clock Test',
+        components: [
+          { id: 'clk', type: 'clock', position: { x: 0, y: 0 }, params: { value: true } },
+        ],
+        wires: [],
+      };
+
+      useSimStore.getState().setClockRunning(true);
+      expect(useSimStore.getState().clockRunning).toBe(true);
+
+      useSimStore.getState().resetSimulation(circuit);
+      expect(useSimStore.getState().clockRunning).toBe(false);
     });
   });
 
@@ -349,6 +379,58 @@ describe('simStore', () => {
         ],
       };
       expect(circuitSimKey(base)).not.toBe(circuitSimKey(wireAdded));
+    });
+  });
+
+  describe('syncIfNeeded with sequential circuits', () => {
+    it('updates flip-flop output when clock is toggled without manually calling setMode', () => {
+      const dffCircuit: Circuit = {
+        version: 1,
+        name: 'DFF Test',
+        components: [
+          { id: 'clk', type: 'clock', position: { x: 0, y: 0 }, params: { value: false } },
+          { id: 'd', type: 'inputSwitch', position: { x: 0, y: 50 }, params: { value: true } },
+          { id: 'ff', type: 'dff', position: { x: 100, y: 0 }, params: { asyncControls: false } },
+        ],
+        wires: [
+          {
+            id: 'w_clk',
+            from: { componentId: 'clk', pinId: 'out' },
+            to: { componentId: 'ff', pinId: 'clk' },
+          },
+          {
+            id: 'w_d',
+            from: { componentId: 'd', pinId: 'out' },
+            to: { componentId: 'ff', pinId: 'd' },
+          },
+        ],
+      };
+
+      // Initial sync (clk = 0, d = 1)
+      expect(syncIfNeeded(dffCircuit)).toBe(true);
+      let s = useSimStore.getState();
+      expect(selectPinValue('ff', 'q')(s)).toBe(0);
+      expect(selectPinValue('ff', 'qn')(s)).toBe(1);
+
+      // Toggle clock from false to true (rising edge)
+      const toggledCircuit: Circuit = {
+        ...dffCircuit,
+        components: [
+          { id: 'clk', type: 'clock', position: { x: 0, y: 0 }, params: { value: true } },
+          dffCircuit.components[1]!,
+          dffCircuit.components[2]!,
+        ],
+      };
+
+      // Calling syncIfNeeded (simulating circuitStore subscription)
+      expect(syncIfNeeded(toggledCircuit)).toBe(true);
+      s = useSimStore.getState();
+      // On rising edge, DFF latches D (1) -> Q becomes 1, Qn becomes 0
+      expect(selectPinValue('ff', 'q')(s)).toBe(1);
+      expect(selectPinValue('ff', 'qn')(s)).toBe(0);
+
+      // Calling syncIfNeeded again without circuit change should return false (no-op)
+      expect(syncIfNeeded(toggledCircuit)).toBe(false);
     });
   });
 });

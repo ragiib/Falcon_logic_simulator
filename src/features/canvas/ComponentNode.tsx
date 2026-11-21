@@ -8,9 +8,11 @@ import { useCircuitWarnings } from './useCircuitWarnings';
 import { isGateType, pinY } from './gateShapes';
 import type { GateType } from './gateShapes';
 import { getNodeSize } from './nodeGeometry';
+import { getBlockTitle } from './blockLabels';
 import { GateBody } from './GateBody';
 import { SwitchBody } from './SwitchBody';
 import { LedBody } from './LedBody';
+import { ClockBody } from './ClockBody';
 
 export type ComponentNodeData = {
   componentId: string;
@@ -26,6 +28,7 @@ export const ComponentNode = memo(function ComponentNode({
     state.circuit.components.find((c) => c.id === data.componentId),
   );
   const toggleInputSwitch = useCircuitStore((state) => state.toggleInputSwitch);
+  const toggleClock = useCircuitStore((state) => state.toggleClock);
   const updateNodeInternals = useUpdateNodeInternals();
 
   const definition = component ? getComponentDefinition(component.type) : undefined;
@@ -63,15 +66,17 @@ export const ComponentNode = memo(function ComponentNode({
 
   const isGate = isGateType(component.type);
   const isSwitch = component.type === 'inputSwitch';
+  const isClock = component.type === 'clock';
   const isLed = component.type === 'outputLed';
-  const isGeneric = !isGate && !isSwitch && !isLed;
+  const isGeneric = !isGate && !isSwitch && !isLed && !isClock;
+  const blockTitle = isGeneric ? getBlockTitle(component.type, component.params) : null;
 
   let containerClass: string;
   if (isGate) {
     containerClass = `relative flex items-center justify-center select-none ${
       selected ? 'rounded outline outline-1 outline-offset-2 outline-accent/50' : ''
     }`;
-  } else if (isSwitch) {
+  } else if (isSwitch || isClock) {
     containerClass = `relative rounded-md border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${
       selected ? 'border-accent ring-1 ring-accent' : 'border-border'
     }`;
@@ -171,8 +176,28 @@ export const ComponentNode = memo(function ComponentNode({
           value={component.params['value'] === true}
           onToggle={() => toggleInputSwitch(component.id)}
         />
+      ) : isClock ? (
+        <ClockBody
+          label={component.label}
+          value={component.params['value'] === true}
+          onToggle={() => toggleClock(component.id)}
+        />
       ) : isLed ? (
         <LedBody lit={ledSignal === 1} label={component.label} />
+      ) : blockTitle ? (
+        <div className="flex flex-col items-center justify-center gap-0.5 max-w-[56px]">
+          <span className="text-xs font-bold tracking-wider truncate text-center">
+            {blockTitle.title}
+          </span>
+          <span className="text-[10px] text-text-muted truncate text-center leading-none">
+            {blockTitle.subtitle}
+          </span>
+          {component.label && (
+            <span className="text-[10px] text-text-muted truncate max-w-[56px] text-center">
+              {component.label}
+            </span>
+          )}
+        </div>
       ) : (
         <div className="flex flex-col items-center justify-center gap-0.5">
           <span className="text-sm font-bold tracking-wider">{definition.label}</span>

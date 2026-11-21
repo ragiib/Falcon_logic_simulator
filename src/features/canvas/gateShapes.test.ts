@@ -166,8 +166,9 @@ describe('gateShapes and nodeGeometry', () => {
       expect(getNodeSize('not', 1, 1)).toEqual({ width: 96, height: 56 });
     });
 
-    it('returns correct dimensions for inputSwitch and outputLed', () => {
+    it('returns correct dimensions for inputSwitch, clock, and outputLed', () => {
       expect(getNodeSize('inputSwitch', 0, 1)).toEqual({ width: 96, height: 56 });
+      expect(getNodeSize('clock', 0, 1)).toEqual({ width: 96, height: 56 });
       expect(getNodeSize('outputLed', 1, 0)).toEqual({ width: 80, height: 64 });
     });
 

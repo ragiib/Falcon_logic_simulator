@@ -1,6 +1,7 @@
 import type { ParamValues, Signal } from './types';
 import type { SimCircuit, SimWire } from './simTypes';
 import { compileCircuit, createInitialState, getInputPinValue, settle } from './simulator';
+import { getComponentDefinition } from './registry';
 import {
   MAX_TRUTH_TABLE_INPUTS,
   type TruthTableColumn,
@@ -201,6 +202,18 @@ export function generateTruthTable(circuit: TruthTableCircuit): TruthTableResult
       ok: false,
       reason: 'circuitIssues',
       message: `Fix the circuit issues first: ${firstMsg}`,
+    };
+  }
+
+  const hasSequential = circuit.components.some(
+    (c) => getComponentDefinition(c.type)?.category === 'sequential',
+  );
+  if (hasSequential) {
+    return {
+      ok: false,
+      reason: 'notCombinational',
+      message:
+        'This circuit contains sequential components (a clock or flip-flops), so its outputs depend on history. Truth tables are only generated for combinational circuits.',
     };
   }
 

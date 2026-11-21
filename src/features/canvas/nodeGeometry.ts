@@ -11,7 +11,7 @@ export function getNodeSize(
       height: Math.max(56, 24 * inputCount + 16),
     };
   }
-  if (type === 'inputSwitch') {
+  if (type === 'inputSwitch' || type === 'clock') {
     return { width: 96, height: 56 };
   }
   if (type === 'outputLed') {

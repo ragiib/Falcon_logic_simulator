@@ -6,14 +6,20 @@ export function SimulationControls() {
   const mode = useSimStore((s) => s.mode);
   const running = useSimStore((s) => s.running);
   const speedMs = useSimStore((s) => s.speedMs);
+  const clockRunning = useSimStore((s) => s.clockRunning);
+  const clockHalfPeriodMs = useSimStore((s) => s.clockHalfPeriodMs);
   const status = useSimStore((s) => s.status);
   const period = useSimStore((s) => s.period);
   const simState = useSimStore((s) => s.simState);
+
+  const hasClock = useCircuitStore((s) => s.circuit.components.some((c) => c.type === 'clock'));
 
   const setMode = useSimStore((s) => s.setMode);
   const stepOnce = useSimStore((s) => s.stepOnce);
   const setRunning = useSimStore((s) => s.setRunning);
   const setSpeedMs = useSimStore((s) => s.setSpeedMs);
+  const setClockRunning = useSimStore((s) => s.setClockRunning);
+  const setClockHalfPeriodMs = useSimStore((s) => s.setClockHalfPeriodMs);
   const resetSimulation = useSimStore((s) => s.resetSimulation);
 
   const tickCount = simState?.tick ?? 0;
@@ -108,6 +114,36 @@ export function SimulationControls() {
         >
           Reset
         </ToolbarButton>
+      )}
+
+      {/* Clock Controls (visible only when circuit has a clock) */}
+      {hasClock && (
+        <div className="flex items-center gap-1.5 pl-1 border-l border-border/60">
+          <ToolbarButton
+            onClick={() => setClockRunning(!clockRunning)}
+            active={clockRunning}
+            aria-pressed={clockRunning}
+            aria-label={clockRunning ? 'Stop auto clock' : 'Start auto clock'}
+            title="Toggle automatic clock ticking"
+          >
+            Auto clock
+          </ToolbarButton>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-surface border border-border text-[10px] text-text-muted">
+            <span>Slow</span>
+            <input
+              type="range"
+              min={100}
+              max={2000}
+              step={100}
+              value={2100 - clockHalfPeriodMs}
+              onChange={(e) => setClockHalfPeriodMs(2100 - Number(e.target.value))}
+              aria-label="Clock speed"
+              title={`Clock half-period: ${clockHalfPeriodMs}ms`}
+              className="w-16 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-accent"
+            />
+            <span>Fast</span>
+          </div>
+        </div>
       )}
 
       {/* Tick & Status Badge */}

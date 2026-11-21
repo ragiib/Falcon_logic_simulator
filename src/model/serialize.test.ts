@@ -323,6 +323,183 @@ describe('model/serialize', () => {
   });
 
   describe('robustness against unexpected inputs', () => {
+    it('round-trips a circuit containing a comparator with bits 4 unchanged', () => {
+      const circuit: Circuit = {
+        version: 1,
+        name: 'Comparator Test',
+        components: [
+          {
+            id: 'cmp1',
+            type: 'comparator',
+            position: { x: 50, y: 50 },
+            params: { bits: 4 },
+          },
+        ],
+        wires: [],
+      };
+      const serialized = serializeCircuit(circuit);
+      const deserialized = deserializeCircuit(serialized);
+      expect(deserialized.ok).toBe(true);
+      if (deserialized.ok) {
+        expect(deserialized.circuit.components[0]?.params['bits']).toBe(4);
+      }
+    });
+
+    it('loads a mux with selectBits 99 clamped to 3 with no error', () => {
+      const json = JSON.stringify({
+        app: 'logic-simulator',
+        version: 1,
+        name: 'Mux Clamp Test',
+        components: [
+          {
+            id: 'm1',
+            type: 'mux',
+            position: { x: 0, y: 0 },
+            params: { selectBits: 99 },
+          },
+        ],
+        wires: [],
+      });
+      const res = deserializeCircuit(json);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.circuit.components[0]?.params['selectBits']).toBe(3);
+      }
+    });
+
+    it('round-trips a circuit with a clock and dff with asyncControls unchanged', () => {
+      const circuit: Circuit = {
+        version: 1,
+        name: 'Sequential Round Trip',
+        components: [
+          {
+            id: 'clk1',
+            type: 'clock',
+            position: { x: 0, y: 0 },
+            params: { value: true },
+          },
+          {
+            id: 'dff1',
+            type: 'dff',
+            position: { x: 100, y: 0 },
+            params: { asyncControls: true },
+          },
+        ],
+        wires: [
+          {
+            id: 'w1',
+            from: { componentId: 'clk1', pinId: 'out' },
+            to: { componentId: 'dff1', pinId: 'clk' },
+          },
+        ],
+      };
+
+      const serialized = serializeCircuit(circuit);
+      const res = deserializeCircuit(serialized);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.circuit.components[0]?.params['value']).toBe(true);
+        expect(res.circuit.components[1]?.params['asyncControls']).toBe(true);
+        expect(res.circuit.wires).toHaveLength(1);
+      }
+    });
+
+    it('loads a dff with wrong-typed asyncControls as false', () => {
+      const json = JSON.stringify({
+        app: 'logic-simulator',
+        version: 1,
+        name: 'DFF Wrong Param Test',
+        components: [
+          {
+            id: 'dff1',
+            type: 'dff',
+            position: { x: 0, y: 0 },
+            params: { asyncControls: 'invalid_string' },
+          },
+        ],
+        wires: [],
+      });
+      const res = deserializeCircuit(json);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.circuit.components[0]?.params['asyncControls']).toBe(false);
+      }
+    });
+
+    it('round-trips a circuit with jkff, register, and shiftRegister with wires unchanged', () => {
+      const circuit: Circuit = {
+        version: 1,
+        name: 'Sequential Multi-Component Test',
+        components: [
+          {
+            id: 'jk1',
+            type: 'jkff',
+            position: { x: 0, y: 0 },
+            params: { asyncControls: false },
+          },
+          {
+            id: 'reg1',
+            type: 'register',
+            position: { x: 120, y: 0 },
+            params: { bits: 8, loadEnable: true, asyncClear: false },
+          },
+          {
+            id: 'sr1',
+            type: 'shiftRegister',
+            position: { x: 240, y: 0 },
+            params: { bits: 4, asyncClear: true },
+          },
+        ],
+        wires: [
+          {
+            id: 'w1',
+            from: { componentId: 'jk1', pinId: 'q' },
+            to: { componentId: 'reg1', pinId: 'd0' },
+          },
+          {
+            id: 'w2',
+            from: { componentId: 'reg1', pinId: 'q0' },
+            to: { componentId: 'sr1', pinId: 'si' },
+          },
+        ],
+      };
+
+      const serialized = serializeCircuit(circuit);
+      const res = deserializeCircuit(serialized);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.circuit.components).toHaveLength(3);
+        expect(res.circuit.wires).toHaveLength(2);
+        expect(res.circuit.components[1]?.params['bits']).toBe(8);
+        expect(res.circuit.components[1]?.params['loadEnable']).toBe(true);
+        expect(res.circuit.components[2]?.params['bits']).toBe(4);
+        expect(res.circuit.components[2]?.params['asyncClear']).toBe(true);
+      }
+    });
+
+    it('clamps register bits to 8 and coerces invalid loadEnable to false', () => {
+      const json = JSON.stringify({
+        app: 'logic-simulator',
+        version: 1,
+        name: 'Register Clamping Test',
+        components: [
+          {
+            id: 'reg1',
+            type: 'register',
+            position: { x: 0, y: 0 },
+            params: { bits: 99, loadEnable: 'not_a_boolean' },
+          },
+        ],
+        wires: [],
+      });
+      const res = deserializeCircuit(json);
+      expect(res.ok).toBe(true);
+      if (res.ok) {
+        expect(res.circuit.components[0]?.params['bits']).toBe(8);
+        expect(res.circuit.components[0]?.params['loadEnable']).toBe(false);
+      }
+    });
+
     it('never throws for arbitrary inputs', () => {
       const inputs = [
         '{}',

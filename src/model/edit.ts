@@ -131,3 +131,39 @@ export function setComponentLabel(circuit: Circuit, componentId: string, label: 
     components: updatedComponents,
   };
 }
+
+/**
+ * Toggles the 'value' param of every clock component in the circuit.
+ * If no clock components exist, returns the original circuit unmodified.
+ */
+export function toggleClocks(circuit: Circuit): Circuit {
+  let hasClocks = false;
+  for (const c of circuit.components) {
+    if (c.type === 'clock') {
+      hasClocks = true;
+      break;
+    }
+  }
+  if (!hasClocks) {
+    return circuit;
+  }
+
+  const updatedComponents = circuit.components.map((c) => {
+    if (c.type !== 'clock') {
+      return c;
+    }
+    const currentVal = c.params['value'] === true;
+    return {
+      ...c,
+      params: {
+        ...c.params,
+        value: !currentVal,
+      },
+    };
+  });
+
+  return {
+    ...circuit,
+    components: updatedComponents,
+  };
+}

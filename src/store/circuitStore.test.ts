@@ -39,6 +39,43 @@ describe('circuitStore', () => {
     expect(comp?.params['value']).toBe(false);
   });
 
+  it('adds combinational components with correct default parameters', () => {
+    const pos = { x: 50, y: 50 };
+    const muxId = useCircuitStore.getState().addComponent('mux', pos);
+    const cmpId = useCircuitStore.getState().addComponent('comparator', pos);
+
+    const circuit = useCircuitStore.getState().circuit;
+    const mux = circuit.components.find((c) => c.id === muxId);
+    const cmp = circuit.components.find((c) => c.id === cmpId);
+
+    expect(mux?.params['selectBits']).toBe(1);
+    expect(cmp?.params['bits']).toBe(1);
+  });
+
+  it('adds sequential components with correct default parameters', () => {
+    const pos = { x: 50, y: 50 };
+    const clkId = useCircuitStore.getState().addComponent('clock', pos);
+    const dffId = useCircuitStore.getState().addComponent('dff', pos);
+    const jkffId = useCircuitStore.getState().addComponent('jkff', pos);
+    const tffId = useCircuitStore.getState().addComponent('tff', pos);
+    const regId = useCircuitStore.getState().addComponent('register', pos);
+
+    const circuit = useCircuitStore.getState().circuit;
+    const clk = circuit.components.find((c) => c.id === clkId);
+    const dff = circuit.components.find((c) => c.id === dffId);
+    const jkff = circuit.components.find((c) => c.id === jkffId);
+    const tff = circuit.components.find((c) => c.id === tffId);
+    const reg = circuit.components.find((c) => c.id === regId);
+
+    expect(clk?.params['value']).toBe(false);
+    expect(dff?.params['asyncControls']).toBe(false);
+    expect(jkff?.params['asyncControls']).toBe(false);
+    expect(tff?.params['asyncControls']).toBe(false);
+    expect(reg?.params['bits']).toBe(4);
+    expect(reg?.params['loadEnable']).toBe(false);
+    expect(reg?.params['asyncClear']).toBe(false);
+  });
+
   it('returns null and leaves circuit unchanged for non-existent component type', () => {
     const id = useCircuitStore.getState().addComponent('doesNotExist', { x: 0, y: 0 });
 
@@ -283,6 +320,69 @@ describe('circuitStore', () => {
 
       const comp = useCircuitStore.getState().circuit.components.find((c) => c.id === and);
       expect(comp?.params['value']).toBeUndefined();
+    });
+  });
+
+  describe('toggleClock', () => {
+    it('toggles value parameter from false to true to false', () => {
+      const clk = useCircuitStore.getState().addComponent('clock', { x: 0, y: 0 })!;
+
+      let comp = useCircuitStore.getState().circuit.components.find((c) => c.id === clk);
+      expect(comp?.params['value']).toBe(false);
+
+      useCircuitStore.getState().toggleClock(clk);
+      comp = useCircuitStore.getState().circuit.components.find((c) => c.id === clk);
+      expect(comp?.params['value']).toBe(true);
+
+      useCircuitStore.getState().toggleClock(clk);
+      comp = useCircuitStore.getState().circuit.components.find((c) => c.id === clk);
+      expect(comp?.params['value']).toBe(false);
+    });
+
+    it('does nothing when called on a non-clock component', () => {
+      const and = useCircuitStore.getState().addComponent('and', { x: 0, y: 0 })!;
+      useCircuitStore.getState().toggleClock(and);
+
+      const comp = useCircuitStore.getState().circuit.components.find((c) => c.id === and);
+      expect(comp?.params['value']).toBeUndefined();
+    });
+  });
+
+  describe('toggleAllClocks', () => {
+    it('toggles all clock components simultaneously and leaves others unchanged', () => {
+      const clk1 = useCircuitStore.getState().addComponent('clock', { x: 0, y: 0 })!;
+      const clk2 = useCircuitStore.getState().addComponent('clock', { x: 50, y: 0 })!;
+      const sw = useCircuitStore.getState().addComponent('inputSwitch', { x: 100, y: 0 })!;
+
+      // Invert clk2 first so they have different values
+      useCircuitStore.getState().toggleClock(clk2);
+
+      let c1 = useCircuitStore.getState().circuit.components.find((c) => c.id === clk1);
+      let c2 = useCircuitStore.getState().circuit.components.find((c) => c.id === clk2);
+      let s = useCircuitStore.getState().circuit.components.find((c) => c.id === sw);
+      expect(c1?.params['value']).toBe(false);
+      expect(c2?.params['value']).toBe(true);
+      expect(s?.params['value']).toBe(false);
+
+      useCircuitStore.getState().toggleAllClocks();
+
+      c1 = useCircuitStore.getState().circuit.components.find((c) => c.id === clk1);
+      c2 = useCircuitStore.getState().circuit.components.find((c) => c.id === clk2);
+      s = useCircuitStore.getState().circuit.components.find((c) => c.id === sw);
+      expect(c1?.params['value']).toBe(true);
+      expect(c2?.params['value']).toBe(false);
+      expect(s?.params['value']).toBe(false);
+    });
+
+    it('leaves circuit unchanged if there are no clock components', () => {
+      const sw = useCircuitStore.getState().addComponent('inputSwitch', { x: 0, y: 0 })!;
+      const prevCircuit = useCircuitStore.getState().circuit;
+
+      useCircuitStore.getState().toggleAllClocks();
+      expect(useCircuitStore.getState().circuit).toBe(prevCircuit);
+
+      const comp = useCircuitStore.getState().circuit.components.find((c) => c.id === sw);
+      expect(comp?.params['value']).toBe(false);
     });
   });
 

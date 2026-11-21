@@ -9,6 +9,7 @@ import {
   setComponentLabel as setModelLabel,
   setComponentParam as setModelParam,
   templateOffsetFor,
+  toggleClocks,
   validateConnection,
 } from '@/model';
 import type { ParamValue } from '@/engine';
@@ -30,6 +31,8 @@ export interface CircuitState {
   setComponentParam: (componentId: string, paramId: string, value: ParamValue) => void;
   setComponentLabel: (componentId: string, label: string) => void;
   toggleInputSwitch: (componentId: string) => void;
+  toggleClock: (componentId: string) => void;
+  toggleAllClocks: () => void;
   replaceCircuit: (circuit: Circuit) => void;
   setCircuitName: (name: string) => void;
   insertFragment: (fragment: CircuitFragment, offset: { x: number; y: number }) => string[];
@@ -170,6 +173,20 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
     if (!comp || comp.type !== 'inputSwitch') return;
     const currentVal = comp.params['value'] === true;
     get().setComponentParam(componentId, 'value', !currentVal);
+  },
+
+  toggleClock: (componentId) => {
+    const comp = get().circuit.components.find((c) => c.id === componentId);
+    if (!comp || comp.type !== 'clock') return;
+    const currentVal = comp.params['value'] === true;
+    get().setComponentParam(componentId, 'value', !currentVal);
+  },
+
+  toggleAllClocks: () => {
+    const nextCircuit = toggleClocks(get().circuit);
+    if (nextCircuit !== get().circuit) {
+      set({ circuit: nextCircuit });
+    }
   },
 
   replaceCircuit: (circuit) => {

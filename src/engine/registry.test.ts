@@ -9,7 +9,7 @@ import {
 import { andGate } from '@/engine/components/gates';
 
 describe('component registry', () => {
-  it('registers all 9 built-in types in the specified order', () => {
+  it('registers all 21 built-in types in the specified order', () => {
     const list = listComponentDefinitions();
     const types = list.map((def) => def.type);
     expect(types).toEqual([
@@ -22,6 +22,18 @@ describe('component registry', () => {
       'nor',
       'xor',
       'xnor',
+      'mux',
+      'demux',
+      'decoder',
+      'priorityEncoder',
+      'comparator',
+      'clock',
+      'dff',
+      'srff',
+      'jkff',
+      'tff',
+      'register',
+      'shiftRegister',
     ]);
   });
 
@@ -59,6 +71,18 @@ describe('component registry', () => {
     expect(ioDefs).toHaveLength(2);
     for (const def of ioDefs) {
       expect(def.category).toBe('io');
+    }
+
+    const combDefs = listComponentDefinitions('combinational');
+    expect(combDefs).toHaveLength(5);
+    for (const def of combDefs) {
+      expect(def.category).toBe('combinational');
+    }
+
+    const seqDefs = listComponentDefinitions('sequential');
+    expect(seqDefs).toHaveLength(7);
+    for (const def of seqDefs) {
+      expect(def.category).toBe('sequential');
     }
   });
 

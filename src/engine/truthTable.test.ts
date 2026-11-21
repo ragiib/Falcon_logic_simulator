@@ -673,4 +673,67 @@ describe('truthTable generator', () => {
       { inputs: [1], outputs: [1] },
     ]);
   });
+
+  it('rejects circuits containing sequential components', () => {
+    const circuit: TruthTableCircuit = {
+      components: [
+        { id: 'sw1', type: 'inputSwitch', params: { value: false } },
+        { id: 'clk1', type: 'clock', params: { value: false } },
+        { id: 'dff1', type: 'dff', params: { asyncControls: false } },
+        { id: 'led1', type: 'outputLed', params: {} },
+      ],
+      wires: [
+        {
+          id: 'w1',
+          from: { componentId: 'sw1', pinId: 'out' },
+          to: { componentId: 'dff1', pinId: 'd' },
+        },
+        {
+          id: 'w2',
+          from: { componentId: 'clk1', pinId: 'out' },
+          to: { componentId: 'dff1', pinId: 'clk' },
+        },
+        {
+          id: 'w3',
+          from: { componentId: 'dff1', pinId: 'q' },
+          to: { componentId: 'led1', pinId: 'in' },
+        },
+      ],
+    };
+
+    const res = generateTruthTable(circuit);
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+
+    expect(res.reason).toBe('notCombinational');
+    expect(res.message.toLowerCase()).toContain('sequential');
+  });
+
+  it('rejects circuits containing a register', () => {
+    const circuit: TruthTableCircuit = {
+      components: [
+        { id: 'sw1', type: 'inputSwitch', params: { value: false } },
+        { id: 'reg1', type: 'register', params: { bits: 4 } },
+        { id: 'led1', type: 'outputLed', params: {} },
+      ],
+      wires: [
+        {
+          id: 'w1',
+          from: { componentId: 'sw1', pinId: 'out' },
+          to: { componentId: 'reg1', pinId: 'd0' },
+        },
+        {
+          id: 'w2',
+          from: { componentId: 'reg1', pinId: 'q0' },
+          to: { componentId: 'led1', pinId: 'in' },
+        },
+      ],
+    };
+
+    const res = generateTruthTable(circuit);
+    expect(res.ok).toBe(false);
+    if (res.ok) return;
+
+    expect(res.reason).toBe('notCombinational');
+  });
 });

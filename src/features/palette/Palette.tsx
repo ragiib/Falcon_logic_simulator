@@ -7,6 +7,8 @@ import { TemplateItem } from './TemplateItem';
 export function Palette() {
   const ioComponents = listComponentDefinitions('io');
   const gateComponents = listComponentDefinitions('gate');
+  const combinationalComponents = listComponentDefinitions('combinational');
+  const sequentialComponents = listComponentDefinitions('sequential');
 
   return (
     <Panel title="Components">
@@ -43,15 +45,19 @@ export function Palette() {
 
         <div className="flex flex-col gap-1.5">
           <h3 className="text-xs font-semibold text-text-muted px-1">Combinational</h3>
-          <div className="px-2.5 py-1.5 text-xs rounded border border-border/40 bg-surface-2/40 text-text-muted/60 select-none cursor-not-allowed">
-            Coming later
+          <div className="flex flex-col gap-1">
+            {combinationalComponents.map((def) => (
+              <PaletteItem key={def.type} definition={def} />
+            ))}
           </div>
         </div>
 
         <div className="flex flex-col gap-1.5">
           <h3 className="text-xs font-semibold text-text-muted px-1">Sequential</h3>
-          <div className="px-2.5 py-1.5 text-xs rounded border border-border/40 bg-surface-2/40 text-text-muted/60 select-none cursor-not-allowed">
-            Coming later
+          <div className="flex flex-col gap-1">
+            {sequentialComponents.map((def) => (
+              <PaletteItem key={def.type} definition={def} />
+            ))}
           </div>
         </div>
       </div>
