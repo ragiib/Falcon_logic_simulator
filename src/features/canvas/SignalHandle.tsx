@@ -10,6 +10,7 @@ export interface SignalHandleProps {
   position: Position;
   top: string;
   warning?: boolean;
+  title?: string;
 }
 
 export const SignalHandle = memo(function SignalHandle({
@@ -19,6 +20,7 @@ export const SignalHandle = memo(function SignalHandle({
   position,
   top,
   warning = false,
+  title,
 }: SignalHandleProps) {
   const signal = useSimStore(
     direction === 'output'
@@ -41,6 +43,7 @@ export const SignalHandle = memo(function SignalHandle({
       id={pinId}
       isConnectable={true}
       style={{ top }}
+      title={title}
       className={`!w-5 !h-5 !rounded-full !border-[5px] !border-solid !border-transparent !bg-clip-padding ${visualClass} hover:!bg-accent hover:shadow-none transition-colors cursor-crosshair`}
     />
   );

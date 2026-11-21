@@ -5,6 +5,12 @@ import { selectInputValue, selectPinValue, useCircuitStore, useSimStore } from '
 import { getComponentDefinition } from '@/engine';
 import { SignalHandle } from './SignalHandle';
 import { useCircuitWarnings } from './useCircuitWarnings';
+import { isGateType, pinY } from './gateShapes';
+import type { GateType } from './gateShapes';
+import { getNodeSize } from './nodeGeometry';
+import { GateBody } from './GateBody';
+import { SwitchBody } from './SwitchBody';
+import { LedBody } from './LedBody';
 
 export type ComponentNodeData = {
   componentId: string;
@@ -39,9 +45,13 @@ export const ComponentNode = memo(function ComponentNode({
   const hasWarnings = compWarnings.length > 0;
   const warningTooltip = hasWarnings ? compWarnings.map((w) => w.message).join('\n') : undefined;
 
+  const { width, height } = component
+    ? getNodeSize(component.type, inputCount, outputCount)
+    : { width: 96, height: 56 };
+
   useEffect(() => {
     updateNodeInternals(data.componentId);
-  }, [data.componentId, inputCount, outputCount, updateNodeInternals]);
+  }, [data.componentId, inputCount, outputCount, height, updateNodeInternals]);
 
   if (!component || !definition) {
     return (
@@ -51,24 +61,41 @@ export const ComponentNode = memo(function ComponentNode({
     );
   }
 
-  const height = Math.max(56, 28 * Math.max(inputCount, outputCount) + 16);
-  const isGateWithHighOutput = definition.category === 'gate' && outSignal === 1;
-  const borderClass = selected
-    ? 'border-accent ring-1 ring-accent'
-    : isGateWithHighOutput
-      ? 'border-signal-high'
-      : 'border-border hover:border-border';
+  const isGate = isGateType(component.type);
+  const isSwitch = component.type === 'inputSwitch';
+  const isLed = component.type === 'outputLed';
+  const isGeneric = !isGate && !isSwitch && !isLed;
+
+  let containerClass: string;
+  if (isGate) {
+    containerClass = `relative flex items-center justify-center select-none ${
+      selected ? 'rounded outline outline-1 outline-offset-2 outline-accent/50' : ''
+    }`;
+  } else if (isSwitch) {
+    containerClass = `relative rounded-md border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${
+      selected ? 'border-accent ring-1 ring-accent' : 'border-border'
+    }`;
+  } else if (isLed) {
+    containerClass = `relative rounded-lg border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${
+      selected ? 'border-accent ring-1 ring-accent' : 'border-border'
+    }`;
+  } else {
+    const isGateWithHighOutput = definition.category === 'gate' && outSignal === 1;
+    const borderClass = selected
+      ? 'border-accent ring-1 ring-accent'
+      : isGateWithHighOutput
+        ? 'border-signal-high'
+        : 'border-border hover:border-border';
+    containerClass = `relative rounded-md border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${borderClass}`;
+  }
 
   return (
-    <div
-      style={{ width: 96, height }}
-      className={`relative rounded-md border flex flex-col items-center justify-center bg-surface-2 text-text select-none transition-colors ${borderClass}`}
-    >
+    <div style={{ width, height }} className={containerClass}>
       {/* Warning marker in top-right corner */}
       {hasWarnings && (
         <span
           title={warningTooltip}
-          className="absolute top-1 right-1.5 text-warning text-xs font-bold leading-none pointer-events-auto cursor-help select-none"
+          className="absolute top-1 right-1.5 z-10 text-warning text-xs font-bold leading-none pointer-events-auto cursor-help select-none"
         >
           ⚠
         </span>
@@ -76,7 +103,7 @@ export const ComponentNode = memo(function ComponentNode({
 
       {/* Input Handles and Labels */}
       {inputPins.map((pin, i) => {
-        const top = `${((i + 1) / (inputCount + 1)) * 100}%`;
+        const topPx = pinY(i, inputCount, height);
         const isUnconnected = compWarnings.some(
           (w) => w.kind === 'unconnectedInput' && w.pinId === pin.id,
         );
@@ -87,22 +114,25 @@ export const ComponentNode = memo(function ComponentNode({
               pinId={pin.id}
               direction="input"
               position={Position.Left}
-              top={top}
+              top={`${topPx}px`}
               warning={isUnconnected}
+              title={pin.label}
             />
-            <span
-              className="absolute left-2 -translate-y-1/2 text-[10px] text-text-muted font-mono leading-none select-none pointer-events-none"
-              style={{ top }}
-            >
-              {pin.label}
-            </span>
+            {isGeneric && (
+              <span
+                className="absolute left-2 -translate-y-1/2 text-[10px] text-text-muted font-mono leading-none select-none pointer-events-none"
+                style={{ top: `${topPx}px` }}
+              >
+                {pin.label}
+              </span>
+            )}
           </div>
         );
       })}
 
       {/* Output Handles and Labels */}
       {outputPins.map((pin, i) => {
-        const top = `${((i + 1) / (outputCount + 1)) * 100}%`;
+        const topPx = pinY(i, outputCount, height);
         return (
           <div key={pin.id}>
             <SignalHandle
@@ -110,57 +140,39 @@ export const ComponentNode = memo(function ComponentNode({
               pinId={pin.id}
               direction="output"
               position={Position.Right}
-              top={top}
+              top={`${topPx}px`}
+              title={pin.label}
             />
-            <span
-              className="absolute right-2 -translate-y-1/2 text-[10px] text-text-muted font-mono leading-none select-none pointer-events-none"
-              style={{ top }}
-            >
-              {pin.label}
-            </span>
+            {isGeneric && (
+              <span
+                className="absolute right-2 -translate-y-1/2 text-[10px] text-text-muted font-mono leading-none select-none pointer-events-none"
+                style={{ top: `${topPx}px` }}
+              >
+                {pin.label}
+              </span>
+            )}
           </div>
         );
       })}
 
       {/* Center Content */}
-      {component.type === 'inputSwitch' ? (
-        <div className="flex flex-col items-center justify-center gap-1">
-          <span className="text-xs font-semibold leading-none">SW</span>
-          {component.label && (
-            <span className="text-[10px] text-text-muted truncate max-w-[70px] leading-tight">
-              {component.label}
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              toggleInputSwitch(component.id);
-            }}
-            aria-pressed={component.params['value'] === true}
-            aria-label="Toggle input switch"
-            className={`nodrag nopan w-6 h-5 rounded border border-border flex items-center justify-center text-[10px] font-mono font-bold cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-accent ${
-              component.params['value'] ? 'bg-signal-high text-white' : 'bg-signal-low text-white'
-            }`}
-          >
-            {component.params['value'] ? '1' : '0'}
-          </button>
-        </div>
-      ) : component.type === 'outputLed' ? (
-        <div className="flex flex-col items-center justify-center gap-1">
-          <div
-            className={`w-4 h-4 rounded-full transition-all ${
-              ledSignal === 1
-                ? 'bg-signal-high shadow-[0_0_10px_var(--color-signal-high)] ring-2 ring-signal-high/40'
-                : 'bg-signal-low shadow-xs'
-            }`}
-          />
-          {component.label && (
-            <span className="text-[10px] text-text-muted truncate max-w-[70px]">
-              {component.label}
-            </span>
-          )}
-        </div>
+      {isGate ? (
+        <GateBody
+          type={component.type as GateType}
+          width={width}
+          height={height}
+          inputCount={inputCount}
+          active={outSignal === 1}
+          selected={selected}
+        />
+      ) : isSwitch ? (
+        <SwitchBody
+          label={component.label}
+          value={component.params['value'] === true}
+          onToggle={() => toggleInputSwitch(component.id)}
+        />
+      ) : isLed ? (
+        <LedBody lit={ledSignal === 1} label={component.label} />
       ) : (
         <div className="flex flex-col items-center justify-center gap-0.5">
           <span className="text-sm font-bold tracking-wider">{definition.label}</span>
